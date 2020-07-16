@@ -38,6 +38,7 @@ object query {
 
     // LogHandler is protected for now.
     protected val logHandler: LogHandler
+    protected val mixin: PreparedStatementIO[_]     
 
     private val now: PreparedStatementIO[Long] =
       FPS.delay(System.nanoTime)
@@ -49,6 +50,7 @@ object query {
       def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
       for {
         t0 <- now
+        _  <- mixin
         eet <- FPS.executeQuery.bracket(rs => for {
           t1 <- now
           et <- FPS.embed(rs, k).attempt
@@ -189,6 +191,7 @@ object query {
         def sql = outer.sql
         def pos = outer.pos
         val logHandler = outer.logHandler
+        val mixin = outer.mixin
       }
 
     /** @group Transformations */
@@ -199,6 +202,7 @@ object query {
         def sql = outer.sql
         def pos = outer.pos
         val logHandler = outer.logHandler
+        val mixin = outer.mixin
       }
 
     /**
@@ -235,13 +239,16 @@ object query {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A, B](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(implicit A: Write[A], B: Read[B]): Query[A, B] =
+    def apply[A, B](sql0: String, pos0: Option[Pos] = None, 
+                    logHandler0: LogHandler = LogHandler.nop,
+                    mixin0: PreparedStatementIO[_] = FPS.unit)(implicit A: Write[A], B: Read[B]): Query[A, B] =
       new Query[A, B] {
         val write = A
         val read = B
         val sql = sql0
         val pos = pos0
         val logHandler = logHandler0
+        val mixin = mixin0
       }
 
     /** @group Typeclass Instances */

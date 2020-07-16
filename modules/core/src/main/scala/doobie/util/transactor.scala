@@ -160,7 +160,9 @@ object transactor  {
     def trans(implicit ev: Bracket[M, Throwable]): ConnectionIO ~> M =
       λ[ConnectionIO ~> M] { f =>
         connect(kernel).use { conn =>
-          strategy.resource.use(_ => f).foldMap(interpret).run(conn)
+          val used = strategy.resource.use(_ => f)
+          val intrprtd = used.foldMap(interpret)
+          intrprtd.run(conn)
         }
       }
 

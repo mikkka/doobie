@@ -98,6 +98,14 @@ object fragment {
     def query[B: Read](implicit h: LogHandler = LogHandler.nop): Query0[B] =
       queryWithLogHandler(h)
 
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+    def queryM[B: Read](
+      implicit 
+        h: LogHandler = LogHandler.nop,
+        mixin: PreparedStatementIO[_] = FPS.unit
+    ): Query0[B] =
+      queryWithLogHandlerAndMixin(h, mixin)
+
     /**
      * Construct a [[Query0]] from this fragment, with asserted row type `B` and the given
      * `LogHandler`.
@@ -105,14 +113,38 @@ object fragment {
     def queryWithLogHandler[B](h: LogHandler)(implicit cb: Read[B]): Query0[B] =
       Query[elems.type, B](sql, pos, h).toQuery0(elems)
 
+      /**
+     * Construct a [[Query0]] from this fragment, with asserted row type `B` and the given
+     * `LogHandler` and mixin `PreparedStatementIO[_]`.
+     */
+    def queryWithLogHandlerAndMixin[B](
+      h: LogHandler,
+      m: PreparedStatementIO[_])(implicit cb: Read[B]): Query0[B] =
+      Query[elems.type, B](sql, pos, h, m).toQuery0(elems)
+
+
     /** Construct an [[Update0]] from this fragment. */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def update(implicit h: LogHandler = LogHandler.nop): Update0 =
       updateWithLogHandler(h)
 
+      /** Construct an [[Update0]] from this fragment. */
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+    def updateM(
+      implicit 
+        h: LogHandler = LogHandler.nop,
+        mixin: PreparedStatementIO[_] = FPS.unit
+    ): Update0 =
+      updateWithLogHandlerAndMixin(h, mixin)
+
+
     /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
     def updateWithLogHandler(h: LogHandler): Update0 =
       Update[elems.type](sql, pos, h).toUpdate0(elems)
+    
+      /** Construct an [[Update0]] from this fragment with the given `LogHandler` and mixin `PreparedStatementIO[_]`. */
+    def updateWithLogHandlerAndMixin(h: LogHandler, m: PreparedStatementIO[_]): Update0 =
+      Update[elems.type](sql, pos, h, m).toUpdate0(elems)
 
     override def toString =
       s"""Fragment("$sql")"""

@@ -41,7 +41,8 @@ object update {
 
     // LogHandler is protected for now.
     protected val logHandler: LogHandler
-
+    protected val mixin: PreparedStatementIO[_]
+    
     private val now: PreparedStatementIO[Long] =
       FPS.delay(System.nanoTime)
 
@@ -52,6 +53,7 @@ object update {
       def log(e: LogEvent) = FPS.delay(logHandler.unsafeRun(e))
       for {
         t0 <- now
+        _  <- mixin
         en <- FPS.executeUpdate.attempt
         t1 <- now
         n  <- en.liftTo[PreparedStatementIO].onError { case e => log(ExecFailure(sql, args, diff(t1, t0), e)) }
@@ -159,6 +161,7 @@ object update {
         val sql = u.sql
         val pos = u.pos
         val logHandler = u.logHandler
+        val mixin = u.mixin
       }
 
     /**
@@ -190,7 +193,9 @@ object update {
      * @group Constructors
      */
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def apply[A](sql0: String, pos0: Option[Pos] = None, logHandler0: LogHandler = LogHandler.nop)(
+    def apply[A](sql0: String, pos0: Option[Pos] = None, 
+                 logHandler0: LogHandler = LogHandler.nop,
+                 mixin0: PreparedStatementIO[_] = FPS.unit)(
       implicit W: Write[A]
     ): Update[A] =
       new Update[A] {
@@ -198,6 +203,7 @@ object update {
         val sql = sql0
         val logHandler = logHandler0
         val pos = pos0
+        val mixin = mixin0
       }
 
     /**
