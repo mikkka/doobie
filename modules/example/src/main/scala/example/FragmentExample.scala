@@ -30,9 +30,10 @@ object FragmentExample extends IOApp {
       whereAndOpt(f1, f2, f3)                        ++
       fr"LIMIT $limit"
 
+    // Construct a timeout mixin
+    implicit val mixin = FPS.setQueryTimeout(1)
     // Construct a Query0
-    q.query[Info]
-
+    q.queryM[Info]
   }
 
   // Our world database
